@@ -1,0 +1,200 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* лекция 12 на сжатие данных
+parent(i)=(i-1)/2» 
+left_child(i)=2*i+1»
+right_child(i)=2*i+2»
+*/ 
+
+typedef struct TreeNode {
+    char symbol;
+    struct TreeNode *left;
+    struct TreeNode *right;
+    double F; // частота встречаемости
+} TreeNode;
+
+typedef struct Heap {
+    TreeNode **arr;
+    int size;
+    int cap;
+} Heap;
+
+Heap* EmptyHeap(int capacity); // создание пустой кучи
+void swap(TreeNode **a, TreeNode **b);
+void minHeapify(Heap *heap, int ind); // функция для восстановления свойств кучи 
+void Insert(Heap *heap, TreeNode *node); // вставка узла в кучу
+void InsertHelper(Heap *heap, int ind);
+TreeNode* ExtractMin(Heap* heap); // извлечение минимального узла
+TreeNode* NewTreeFromSymbol(char sym, double F); // создание нового узла дерева
+TreeNode* NewTreeFromTwoTrees(TreeNode* tree0, TreeNode* tree1); // создание нового узла для объединения поддеревьев
+TreeNode* BuildHuffmanTree(int cap, int *f); // создание дерева хаффмана
+void Compression(char *inputPath, char *outputPath); // функция для сжатия
+void Decompression(char *inputPath, char *outputPath); // функция для разжатия
+
+int main(int argc, char **argv)
+{
+    if (argc != 4)
+    {
+        printf("Ошибка\n");
+        return 0;
+    }
+
+    FILE *f_in = fopen("input.txt", "rb");
+    FILE *f_out = fopen("output.txt", "wb+");
+
+    int *frequency = (int*) calloc(256, sizeof(int));
+    char ch;    
+    while ((ch = fgetc(f_in)) != EOF) // 
+    {
+        frequency[(unsigned char)ch]++;
+    }
+
+
+    TreeNode *root;
+    root = BuildHuffmanTree(256, frequency);
+    if (root)
+    {
+        printf("Общее количество символов: %lf\n", root->F);
+    } else
+    {
+        printf("Ошибка построения дерева Хаффмана\n");
+    }
+
+    if (strcmp(argv[1], "c") == 0)
+    {
+        Compression(argv[2], argv[3]);
+    } else if (strcmp(argv[1], "d") == 0)
+    {
+        Decompression(argv[2], argv[3]);
+    } else
+    {
+        printf("Ошибка, введите 'c', если хотите сжать файл или 'd' для разжатия\n");
+        return 0;
+    }
+
+    free(frequency);
+    fclose(f_in);
+    fclose(f_out);
+    return 0;
+}
+
+
+void Compression(char *inputPath, char *outputPath)
+{
+    // код сжатия файла
+}
+
+void Decompression(char *inputPath, char *outputPath)
+{
+    // код расжатия файла
+}
+
+
+void swap(TreeNode **a, TreeNode **b)
+{
+    TreeNode *temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+Heap* EmptyHeap(int capacity)
+{
+    Heap *heap = (Heap*) calloc(1, sizeof(Heap));
+    heap->size = 0;
+    heap->cap = capacity;
+    heap->arr = (TreeNode**) calloc(capacity, sizeof(TreeNode*));
+    return heap;
+}
+
+void minHeapify(Heap *heap, int ind)
+{
+    int smallest = ind;
+    int left = 2 * ind + 1;
+    int right = 2 * ind + 2;
+
+    if (left < heap->size && heap->arr[left]->F < heap->arr[smallest]->F)
+    {
+        smallest = left;
+    }
+
+    if (right < heap->size && heap->arr[right]->F < heap->arr[smallest]->F)
+    {
+        smallest = right;
+    }
+
+    if (smallest != ind)
+    {
+        swap(&heap->arr[smallest], &heap->arr[ind]);
+        minHeapify(heap, smallest);
+    }
+}
+
+void Insert(Heap *heap, TreeNode *node)
+{
+    if (heap->size < heap->cap)
+    {
+        heap->arr[heap->size] = node;
+        InsertHelper(heap, heap->size);
+        heap->size++;
+    }
+}
+
+void InsertHelper(Heap *heap, int ind)
+{
+    int parent = (ind - 1) / 2;
+    if (heap->arr[parent]->F > heap->arr[ind]->F)
+    {
+        swap(&heap->arr[parent], &heap->arr[ind]);
+        InsertHelper(heap, parent);
+    }
+}
+
+TreeNode* ExtractMin(Heap* heap)
+{
+    TreeNode* minNode = heap->arr[0]; // вытаскиваем первый - минимальный
+    heap->arr[0] = heap->arr[heap->size - 1]; // меняем первый на последний
+    heap->size--; // убираем последний
+    minHeapify(heap, 0);
+    return minNode;
+}
+
+TreeNode* NewTreeFromSymbol(char sym, double F)
+{
+    TreeNode* res = (TreeNode*) malloc(sizeof(TreeNode));
+    res->F = F;
+    res->symbol = sym;
+    res->left = res->right = NULL;
+    return res;
+}
+
+TreeNode* NewTreeFromTwoTrees(TreeNode* tree0, TreeNode* tree1)
+{
+    TreeNode* res = (TreeNode*) malloc(sizeof(TreeNode));
+    res->F = tree0->F + tree1->F;
+    res->left = tree0;
+    res->right = tree1;
+    return res;
+}
+
+TreeNode* BuildHuffmanTree(int cap, int *f)
+{
+    Heap *heap = EmptyHeap(cap);
+    TreeNode *tree0;
+    TreeNode *tree1;
+    for (int i = 0; i < cap; i++)
+    {
+        if (f[i] != 0)
+        {
+            Insert(heap, NewTreeFromSymbol((char)i, f[i]));
+        }
+    }
+    while (heap->size > 1) //   for - seg fault
+    {
+        tree0 = ExtractMin(heap);
+        tree1 = ExtractMin(heap);
+        Insert(heap, NewTreeFromTwoTrees(tree0, tree1));
+    }
+    return ExtractMin(heap);
+}
