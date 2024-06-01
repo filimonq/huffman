@@ -236,10 +236,10 @@ void Compression(char *inputPath, char *outputPath)
     }
 
     int *frequency = (int*) calloc(SIZE, sizeof(int));
-    char ch;    
-    while ((ch = fgetc(f_in)) != EOF) 
+    unsigned char ch;
+    while (fread(&ch, sizeof(unsigned char), 1, f_in))
     {
-        frequency[(unsigned char)ch]++;
+        frequency[ch]++;
     }
 
     TreeNode *root = BuildHuffmanTree(SIZE, frequency);
@@ -263,15 +263,15 @@ void Compression(char *inputPath, char *outputPath)
     char code[SIZE];
     BuildCodeTable(root, code, 0, table);
     
-    fseek(f_in, 0, SEEK_SET); // возвращаемся в начало файла
+    fseek(f_in, 0, SEEK_SET);  // в начало файла
     
-    unsigned char byte = 0; // байт, в который мы собираем биты
+    unsigned char byte = 0;  // байт, в который мы собираем биты
     int length = 0, bitCount = 0; // cчётчик, который отслеживает, сколько битов мы сейчас добавили в байт
     char* codeStr;
-    while ((ch = fgetc(f_in)) != EOF)
+    while (fread(&ch, sizeof(unsigned char), 1, f_in))
     {
-        codeStr = table[(unsigned char)ch]->code;
-        length = table[(unsigned char)ch]->length;
+        codeStr = table[ch]->code;
+        length = table[ch]->length;
         
         for (int i = 0; i < length; i++)
         {
@@ -292,7 +292,6 @@ void Compression(char *inputPath, char *outputPath)
         byte = byte << (8 - bitCount);
         fwrite(&byte, sizeof(unsigned char), 1, f_out);
     }
-
 
     for (int i = 0; i < SIZE; i++)
     {
