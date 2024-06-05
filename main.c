@@ -42,23 +42,21 @@ void WriteTree(TreeNode* root, FILE* f_out); // сохранение струк�
 TreeNode* ReadTree(FILE* f_in); // восстановление дерева из файла:
 
 int main(int argc, char **argv)
-{
-    if (argc != 4)
+{   
+    for (int i = 2; i <= (argc - 2); i+=2)
     {
-        printf("Ошибка\n");
-        return 0;
-    }
+        if (strcmp(argv[1], "c") == 0)
+        {
+            Compression(argv[i], argv[i + 1]);
+        } else if (strcmp(argv[1], "d") == 0)
+        {
+            Decompression(argv[i], argv[i + 1]);
+        } else
+        {
+            printf("./a.out c/d <f.in> <f.out> <f2.in> <f2.out>\n");
 
-    if (strcmp(argv[1], "c") == 0)
-    {
-        Compression(argv[2], argv[3]);
-    } else if (strcmp(argv[1], "d") == 0)
-    {
-        Decompression(argv[2], argv[3]);
-    } else
-    {
-        printf("Ошибка, введите 'c', если хотите сжать файл или 'd' для разжатия\n");
-        return 0;
+            return 0;
+        }
     }
 
     return 0;
@@ -314,7 +312,7 @@ void Decompression(char *inputPath, char *outputPath)
         return;
     }
     
-    // Восстановим дерево из файла
+    // восстановим дерево из файла
     TreeNode *root = ReadTree(f_in);
     if (!root)
     {
@@ -332,17 +330,17 @@ void Decompression(char *inputPath, char *outputPath)
     {
         for (bitPos = 7; bitPos >= 0; bitPos--)
         {
-            // Идём по дереву Хаффмана
+            // идём по дереву хаффмана
             if (byte & (1 << bitPos))
                 current = current->right;
             else
                 current = current->left;
 
-            // Считываем символ, если достигли листа
+            // считываем символ, если достигли листа
             if (!current->left && !current->right)
             {
                 fputc(current->symbol, f_out);
-                current = root;  // Возвращаемся к корню
+                current = root;  // возвращаемся к корню
             }
         }
     }
